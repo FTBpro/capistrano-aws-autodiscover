@@ -39,7 +39,7 @@ class CapistranoAwsAutodiscover
               Aws.config = { access_key_id: @key,
                              secret_access_key: @secret,
                              region: @region }
-              Aws::EC2.new
+              Aws::EC2::Client.new
              end
   end
 
@@ -57,10 +57,10 @@ class CapistranoAwsAutodiscover
   end
 
   def make_args(instance)
-    ip = instance.public_ip_address
+    public_dns = instance.public_dns_name
     roles_tag = instance.tags.find {|t| t.key == "Roles"}.value
     roles = roles_tag.split(/,|;/)
-    [ip, roles].flatten
+    [public_dns, roles].flatten
   end
 
 end
