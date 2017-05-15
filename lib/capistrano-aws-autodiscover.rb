@@ -1,14 +1,16 @@
 require "capistrano-aws-autodiscover/version"
 require 'aws-sdk-core'
 
-Capistrano::Configuration.instance(:must_exist).load do
-  def define_servers
-    instances = CapistranoAwsAutodiscover.new(fetch(:aws_key_id), fetch(:secret_access_key), fetch(:aws_region), fetch(:ec2_project), fetch(:ec2_env)).execute
-    instances.each {|s| server *s}
-  end
-end
-
 class CapistranoAwsAutodiscover
+
+  Instance = Struct.new(:dns, :roles)
+
+  def self.define_servers
+    instances = CapistranoAwsAutodiscover.new(fetch(:aws_key_id), fetch(:secret_access_key), fetch(:aws_region), fetch(:ec2_project), fetch(:ec2_env)).execute
+    instances.each do |s| 
+      server s.dns, roles: s.roles, user: fetch(:user)
+    end
+  end
 
   def initialize(key, secret, aws_region, project, environment)
     @key = key
@@ -57,10 +59,9 @@ class CapistranoAwsAutodiscover
   end
 
   def make_args(instance)
-    public_dns = instance.public_dns_name
+    dns = instance.public_dns_name
     roles_tag = instance.tags.find {|t| t.key == "Roles"}.value
     roles = roles_tag.split(/,|;/)
-    [public_dns, roles].flatten
+    Instance.new(dns, roles)
   end
-
 end
